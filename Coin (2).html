@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MyCoin — เติมเหรียญ / ระบบล็อกอิน</title>
+<style>
+  :root{
+    --pastel-purple-1: #d6b3ff;
+    --pastel-purple-2: #f3d9ff;
+    --pastel-pink-1: #ffcce5;
+    --pastel-pink-2: #ffe6f0;
+    --pastel-blue-1: #d8f1ff;
+    --accent: #6b2fa3;
+    --accent-2: #b57edc;
+    --muted:#666;
+    --card-bg: rgba(255,255,255,0.95);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: Inter, "Noto Sans Thai", Roboto, Arial, sans-serif;
+    background: url(https://wallpaperbat.com/img/130124-oceanside-view-1280x720-music-indieartist-chicago.jpg)no-repeat;
+    background-size: cover;
+    
+  }
+  @keyframes pageFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* Header / nav */
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:14px 20px;
+    background: rgba(90,0,140,0.9);
+    color:#fff;
+  }
+  header .brand{font-weight:700; letter-spacing:0.6px}
+  nav{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  nav a{
+    color:#fff; text-decoration:none; font-weight:600;
+    transition: transform .18s ease, color .18s;
+  }
+  nav a:hover{ transform:translateY(-3px); color:#ffd6ff }
+
+  /* Layout: left history column + main column */
+  .layout{
+    display:grid;
+    grid-template-columns: 320px 1fr;
+    gap:22px;
+    width:100%;
+    max-width:1150px;
+    margin:0 auto;
+    padding:0 18px;
+  }
+
+  /* LEFT: histories */
+  .panel {
+    background: var(--card-bg);
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.08);
+    min-height:200px;
+    transition: transform .3s ease;
+  }
+  .panel h3{ margin:0 0 8px; color:var(--accent) }
+  .list { max-height:62vh; overflow:auto; padding-right:6px }
+  .entry{
+    background: linear-gradient(90deg,#fff,#fbf7ff);
+    border-radius:10px;
+    padding:10px;
+    margin-bottom:10px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.04);
+    font-size:0.95rem;
+  }
+  .small { font-size:0.86rem; color:var(--muted) }
+
+  /* RIGHT: main content */
+  .main {
+    background: var(--card-bg);
+    border-radius:14px;
+    padding:18px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.08);
+    min-height:60vh;
+  }
+  .tabs { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px }
+  .tab-btn {
+    padding:8px 12px; border-radius:10px; border:none; cursor:pointer;
+    background:transparent; color:var(--accent); font-weight:700;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.03);
+    transition:.18s;
+  }
+  .tab-btn.active { background: linear-gradient(90deg,var(--pastel-blue-1),#fff); box-shadow:0 6px 18px rgba(107,47,163,0.12) }
+
+  /* Login / Register cards */
+  .card { border-radius:12px; padding:18px; background:linear-gradient(180deg,#fff,#fff); box-shadow:0 6px 20px rgba(0,0,0,0.06); }
+  .login-card { background: linear-gradient(135deg,var(--pastel-pink-1),var(--pastel-pink-2)); }
+  .register-card { background: linear-gradient(135deg,var(--pastel-blue-1),#e8f7ff); }
+  .form-row { display:flex; gap:8px; margin-bottom:10px }
+  label{ font-size:0.9rem; display:block; margin-bottom:6px }
+  input, select { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); outline:none; }
+  .btn { padding:10px 12px; border-radius:9px; border:none; cursor:pointer; background:var(--accent-2); color:#fff; font-weight:700; }
+  .btn.secondary { background:#dc3545 }
+  .muted { color:var(--muted) }
+
+  /* coin packages */
+  .coin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:12px }
+  .pkg { padding:14px; border-radius:12px; background:linear-gradient(180deg,#fff,#fbf7ff); border:2px solid rgba(107,47,163,0.08); text-align:center; transition:transform .18s, box-shadow .18s }
+  .pkg:hover{ transform:translateY(-6px); box-shadow:0 10px 30px rgba(107,47,163,0.12) }
+  .pkg h4{ margin:6px 0; color:var(--accent) }
+  .pkg p{ margin:6px 0; color:var(--muted) }
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    background: linear-gradient(90deg,rgba(0,0,0,0.45),rgba(0,0,0,0.55)); z-index:60;
+    animation: popModal .18s ease;
+  }
+  @keyframes popModal { from{opacity:0; transform:scale(.98)} to{opacity:1; transform:none} }
+  .modal{
+    width:360px; max-width:92%; background:#fff; border-radius:12px; padding:16px; box-shadow:0 10px 40px rgba(0,0,0,0.25);
+  }
+  .qr-sample{ width:140px; height:140px; margin:10px auto; background:#f7f7f7; border-radius:8px; border:1px dashed #ddd; display:flex; align-items:center; justify-content:center; }
+
+  /* responsive */
+  @media (max-width:900px){
+    .layout{ grid-template-columns: 1fr; padding:0 12px; }
+    .panel{ order:2 }
+  }
+</style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="brand">MyCoin</div>
+    <nav>
+      <a href="#" onclick="goHome(event)">หน้าแรก</a>
+      <a href="#" onclick="alert('เกี่ยวกับ (ตัวอย่าง)')">เกี่ยวกับ</a>
+      <a href="#topup" onclick="openTab('topup')">เติมเหรียญ</a>
+      <a href="#" onclick="alert('บริการ (ตัวอย่าง)')">บริการ</a>
+      <a href="#register" onclick="openTab('register')">ลงทะเบียน</a>
+      <a href="#" onclick="alert('ติดต่อ (ตัวอย่าง)')">ติดต่อ</a>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: Histories -->
+    <aside class="panel" id="leftPanel" aria-live="polite">
+      <h3>ประวัติการเติมเหรียญ</h3>
+      <div class="list" id="txList">
+        <p class="muted">ยังไม่มีรายการ</p>
+      </div>
+
+      <hr style="margin:14px 0;border:none;border-top:1px solid rgba(0,0,0,0.06)">
+
+      <h3>ประวัติการใช้เหรียญ</h3>
+      <div class="list" id="useList">
+        <p class="muted">ยังไม่มีรายการ</p>
+      </div>
+    </aside>
+
+    <!-- RIGHT: Main -->
+    <main class="main">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px">
+        <div>
+          <div class="muted">ผู้ใช้:</div>
+          <div id="currentUserLabel" style="font-weight:700">ยังไม่ได้ล็อกอิน</div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted">ยอดเหรียญ</div>
+          <div style="font-weight:800;font-size:1.2rem" id="balanceLabel">0</div>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="เมนู">
+        <button class="tab-btn active" id="tab-home" onclick="openTab('home')">หน้าแรก</button>
+        <button class="tab-btn" id="tab-topup" onclick="openTab('topup')">เติมเหรียญ</button>
+        <button class="tab-btn" id="tab-register" onclick="openTab('register')">ลงทะเบียน / ล็อกอิน</button>
+        <button class="tab-btn" id="tab-profile" onclick="openTab('profile')">โปรไฟล์</button>
+      </div>
+
+      <!-- CONTENT PANES -->
+      <section id="pane-home" class="card" style="margin-top:12px; display:block;">
+        <div style="text-align:center; padding:28px 6px;">
+          <h2 style="margin:6px 0 12px; color:var(--accent)">ยินดีต้อนรับสู่ระบบเติมเหรียญของเรา</h2>
+          <p class="muted" style="margin-bottom:18px">สะดวก รวดเร็ว และปลอดภัย (ตามที่จริงไม่ได้ปลอดภัย บิด 100)</p>
+          <button class="btn" onclick="goToTopup()">ไปที่หน้าเติมเหรียญ</button>
+        </div>
+      </section>
+
+      <section id="pane-topup" class="card" style="margin-top:12px; display:none;">
+        <h2>เติมเหรียญ</h2>
+        <div class="muted small">ไม่มีโปรโมชั่น ทางร้านขาดทุน</div>
+
+        <div class="coin-grid" id="packagesGrid">
+        </div>
+
+        <div style="margin-top:18px">
+          <h3 style="margin:6px 0;color:var(--accent)">ประวัติการเติม </h3>
+          <div id="recentTx" class="muted small">รายการล่าสุดจะแสดงที่ฝั่งซ้าย</div>
+        </div>
+      </section>
+
+      <section id="pane-register" class="card" style="margin-top:12px; display:none;">
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <!-- LOGIN (pink pastel) -->
+          <div style="flex:1; min-width:260px" class="login-card card">
+            <h3 style="margin-top:0">ล็อกอิน </h3>
+            <label>ชื่อผู้ใช้</label>
+            <input id="login_username" placeholder="ชื่อผู้ใช้">
+            <label>รหัสผ่าน</label>
+            <input id="login_password" type="password" placeholder="รหัสผ่าน">
+            <div style="display:flex; gap:8px; margin-top:10px">
+              <button class="btn" onclick="handleLogin()">ล็อกอิน</button>
+              <button class="btn secondary" onclick="handleLogout()">ออก</button>
+            </div>
+          </div>
+
+          <!-- REGISTER (blue pastel) -->
+          <div style="flex:1; min-width:260px" class="register-card card">
+            <h3 style="margin-top:0">สมัครสมาชิก</h3>
+            <label>ชื่อผู้ใช้</label><input id="reg_username" placeholder="ชื่อผู้ใช้">
+            <label>อีเมล</label><input id="reg_email" placeholder="อีเมล ">
+            <label>รหัสผ่าน</label><input id="reg_pass" type="password" placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)">
+            <label>ยืนยันรหัสผ่าน</label><input id="reg_pass2" type="password" placeholder="ยืนยันรหัสผ่าน">
+            <div style="display:flex; gap:8px; margin-top:10px">
+              <button class="btn" onclick="handleRegister()">สมัครสมาชิก</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pane-profile" class="card" style="margin-top:12px; display:none;">
+        <h2>โปรไฟล์ผู้ใช้</h2>
+        <div id="profileArea" class="muted">กรุณาล็อกอินเพื่อดูข้อมูลโปรไฟล์</div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <h3>ชำระเงิน</h3>
+      <p id="modalText"></p>
+      <div class="qr-sample">QR / TrueMoney</div>
+      <button class="btn" onclick="closeModal()">ปิด</button>
+    </div>
+  </div>
+
+<script>
+  // user/session
+  let user = null;
+  const usersDB = {}; // ตัวอย่างเก็บ user แบบ local
+  const txHistory = [];
+  const useHistory = [];
+
+  const coinPackages = [
+    {coins:93, price:35}, {coins:184, price:69}, {coins:487, price:179},
+    {coins:1361, price:499}, {coins:2171, price:799}, {coins:5935, price:1000}, {coins:2300, price:2200}
+  ];
+
+  // UI helpers
+  function goHome(e){ e?.preventDefault(); openTab('home'); }
+  function goToTopup(){ openTab('topup'); }
+
+  function renderUI(){
+    document.getElementById('packagesGrid').innerHTML = coinPackages.map((p,i)=>
+      `<div class="pkg">
+        <h4>${p.coins} เหรียญ</h4>
+        <p>ราคา ${p.price} บาท</p>
+        <button class="btn" onclick="payPackage(${i})">ชำระเงิน</button>
+      </div>`
+    ).join('');
+
+    // profile
+    const profileArea = document.getElementById('profileArea');
+    if(user){
+      profileArea.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div><strong>ชื่อผู้ใช้:</strong> ${user.username}</div>
+          <div><strong>ยอดเหรียญ:</strong> ${user.coins || 0}</div>
+        </div>
+      `;
+    } else {
+      profileArea.innerHTML = 'กรุณาเข้าสู่ระบบเพื่อดูโปรไฟล์';
+    }
+
+    // header labels
+    document.getElementById('currentUserLabel').textContent = user ? user.username : 'ยังไม่ได้ล็อกอิน';
+    document.getElementById('balanceLabel').textContent = user ? user.coins||0 : 0;
+
+    // histories
+    const txList = document.getElementById('txList');
+    txList.innerHTML = txHistory.length ? txHistory.map(t=>`<div class="entry">${t}</div>`).join('') : '<p class="muted">ยังไม่มีรายการ</p>';
+    const useList = document.getElementById('useList');
+    useList.innerHTML = useHistory.length ? useHistory.map(t=>`<div class="entry">${t}</div>`).join('') : '<p class="muted">ยังไม่มีรายการ</p>';
+  }
+
+  function openTab(tabId){
+    ['home','topup','register','profile'].forEach(t=>{
+      document.getElementById('pane-'+t).style.display='none';
+      document.getElementById('tab-'+t).classList.remove('active');
+    });
+    document.getElementById('pane-'+tabId).style.display='block';
+    document.getElementById('tab-'+tabId).classList.add('active');
+  }
+
+  // REGISTER
+  function handleRegister(){
+    const u = document.getElementById('reg_username').value.trim();
+    const e = document.getElementById('reg_email').value.trim();
+    const p1 = document.getElementById('reg_pass').value;
+    const p2 = document.getElementById('reg_pass2').value;
+    if(!u || !e || !p1 || !p2){ alert('กรอกข้อมูลให้ครบ'); return; }
+    if(p1!==p2){ alert('รหัสผ่านไม่ตรงกัน'); return; }
+    if(usersDB[u]){ alert('มีผู้ใช้ชื่อนี้แล้ว'); return; }
+    usersDB[u] = {username:u,email:e,password:p1,coins:0};
+    alert('สมัครสมาชิกสำเร็จ! ล็อกอินได้เลย');
+    document.getElementById('reg_username').value='';
+    document.getElementById('reg_email').value='';
+    document.getElementById('reg_pass').value='';
+    document.getElementById('reg_pass2').value='';
+  }
+
+  // LOGIN / LOGOUT
+  function handleLogin(){
+    const u = document.getElementById('login_username').value.trim();
+    const p = document.getElementById('login_password').value;
+    if(!usersDB[u] || usersDB[u].password!==p){ alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); return; }
+    user = usersDB[u];
+    sessionStorage.setItem('user', u);
+    renderUI();
+    alert('ล็อกอินสำเร็จ');
+  }
+  function handleLogout(){ user=null; sessionStorage.removeItem('user'); renderUI(); alert('ออกจากระบบแล้ว'); }
+
+  // load session
+  const savedUser = sessionStorage.getItem('user');
+  if(savedUser && usersDB[savedUser]){ user=usersDB[savedUser]; }
+
+  // TOPUP
+  function payPackage(idx){
+    if(!user){ alert('กรุณาล็อกอินก่อน'); return; }
+    const pkg = coinPackages[idx];
+    const now = new Date();
+    const timestamp = now.toLocaleString();
+    user.coins = (user.coins||0) + pkg.coins;
+    txHistory.unshift(`${timestamp} - ชำระ ${pkg.price} บาท ได้ ${pkg.coins} เหรียญ (TrueMoney / QR Code)`);
+    renderUI();
+    openModal(`คุณชำระเงิน ${pkg.price} บาท รับ ${pkg.coins} เหรียญ เรียบร้อย`);
+  }
+
+  // MODAL
+  function openModal(msg){
+    document.getElementById('modalText').textContent = msg;
+    document.getElementById('modalBackdrop').style.display='flex';
+  }
+  function closeModal(){ document.getElementById('modalBackdrop').style.display='none' }
+
+  // initial render
+  renderUI();
+</script>
+</body>
+</html>
